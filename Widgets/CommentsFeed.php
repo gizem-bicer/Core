@@ -13,6 +13,7 @@ use exface\Core\Widgets\Traits\EditableTableTrait;
 use exface\Core\Interfaces\WidgetInterface;
 use exface\Core\DataTypes\BooleanDataType;
 use exface\Core\Exceptions\LogicException;
+use exface\Core\Exceptions\RuntimeException;
 use exface\Core\Facades\HttpFileServerFacade;
 use exface\Core\Interfaces\DataSheets\DataSheetInterface;
 use exface\Core\Interfaces\Widgets\iCanEditData;
@@ -89,6 +90,8 @@ class CommentsFeed extends Data implements iCanEditData, iTakeInput, iFillEntire
     private $downloadEnabled = true;
     
     private $checkedBehaviorForObject = null;
+
+    private $mentionsEnabled = false;
 
     private $btnCreate;
 
@@ -402,15 +405,55 @@ class CommentsFeed extends Data implements iCanEditData, iTakeInput, iFillEntire
     }
 
     /**
+     * Checks the configured legacy comment-admin role against the authenticated user's role list.
      *
      * @return ?bool
      */
     public function isCurrentUserAdmin() : ?bool
     {
-        return $this->getWorkbench()->getSecurity()->getAuthenticatedUser()->getRoles() === "Comment Admin Role";
+        return \in_array("Comment Admin Role", $this->getWorkbench()->getSecurity()->getAuthenticatedUser()->getRoles(), true);
     }
 
+    /**
+     * Enables ping search only when a CommentBehavior can validate and resolve every user token.
+     *
+     * @uxon-property enable_mentions
+     * @uxon-type boolean
+     * @uxon-default false
+     *
+     * @param bool $value
+     * @return CommentsFeed
+     */
+    public function setEnableMentions(bool $value) : CommentsFeed
+    {
+        $this->mentionsEnabled = $value;
+        return $this;
+    }
 
+    /**
+     * Returns whether the client should enable @-mention controls for this feed.
+     *
+     * @return bool
+     */
+    public function getEnableMentions() : bool
+    {
+        return $this->mentionsEnabled;
+    }
+
+    /**
+     * Resolves the feed behavior so reads, writes, and user search share one mention policy.
+     *
+     * @return CommentBehavior
+     */
+    public function getCommentBehavior() : CommentBehavior
+    {
+        $behavior = $this->getMetaObject()->getBehaviors()->getByPrototypeClass(CommentBehavior::class)->getFirst();
+        if (! $behavior instanceof CommentBehavior || ! $behavior->hasMentionConfiguration()) {
+            throw new RuntimeException('CommentsFeed has `enable_mentions` enabled, but its object has no fully configured CommentBehavior mention object and attributes.');
+        }
+        $behavior->assertMentionConfiguration();
+        return $behavior;
+    }
 
     /**
      *
