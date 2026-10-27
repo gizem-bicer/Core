@@ -99,6 +99,11 @@ class CommentsFeed extends Data implements iCanEditData, iTakeInput, iFillEntire
 
     private $btnDelete;
 
+    /**
+     * Initializes only object-independent defaults because UXON object_alias is imported after widget construction.
+     *
+     * @return void
+     */
     protected function init()
     {
         parent::init();
@@ -106,42 +111,73 @@ class CommentsFeed extends Data implements iCanEditData, iTakeInput, iFillEntire
         // explicitly enabled by the user.
         $this->setHideHeader(true);
         $this->setHideFooter(true);
+    }
 
-        $translator = $this->getWorkbench()->getCoreApp()->getTranslator();
-        
-        //buttons are created from the framework their click functions will be used in the ui 
+    /**
+     * Creates hidden CRUD actions on demand so their object is the feed's imported object, not its parent's.
+     *
+     * @return void
+     */
+    private function initializeActionButtons() : void
+    {
+        if ($this->btnCreate !== null) {
+            return;
+        }
+
+        $objectAlias = $this->getMetaObject()->getAliasWithNamespace();
         $this->btnCreate = $this->createButton(new UxonObject([
             'widget_type' => 'DataButton',
+            'object_alias' => $objectAlias,
             'visibility' => 'hidden',
             'action_alias' => 'exface.Core.CreateData'
         ]));
-        $this->addButton($this->btnCreate);$this->btnEdit = $this->createButton(new UxonObject([
+        $this->addButton($this->btnCreate);
+        $this->btnEdit = $this->createButton(new UxonObject([
             'widget_type' => 'DataButton',
+            'object_alias' => $objectAlias,
             'visibility' => 'hidden',
             'action_alias' => 'exface.Core.UpdateData'
         ]));
         $this->addButton($this->btnEdit);
         $this->btnDelete = $this->createButton(new UxonObject([
             'widget_type' => 'DataButton',
+            'object_alias' => $objectAlias,
             'visibility' => 'hidden',
             'action_alias' => 'exface.Core.DeleteObject'
         ]));
         $this->addButton($this->btnDelete);
-        return;
     }
 
+    /**
+     * Creates the hidden create action only when the facade or caller needs it, after object_alias import.
+     *
+     * @return DataButton
+     */
     public function getButtonCreate() : DataButton
     {
+        $this->initializeActionButtons();
         return $this->btnCreate;
     }
 
+    /**
+     * Creates the hidden delete action only when needed so it inherits the configured feed object.
+     *
+     * @return DataButton
+     */
     public function getButtonDelete() : DataButton
     {
+        $this->initializeActionButtons();
         return $this->btnDelete;
     }
 
+    /**
+     * Creates the hidden update action only when needed so it inherits the configured feed object.
+     *
+     * @return DataButton
+     */
     public function getButtonEdit() : DataButton
     {
+        $this->initializeActionButtons();
         return $this->btnEdit;
     }
 
