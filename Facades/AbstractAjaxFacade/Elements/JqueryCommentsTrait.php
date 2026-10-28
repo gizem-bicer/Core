@@ -27,7 +27,7 @@ trait JqueryCommentsTrait
     ) : string
     {
         $widget = $this->getWidget();
-        $elementId = $this->escapeString($this->getId(), true, false);
+        $elementSelector = '$(' . $this->escapeString('#' . $this->getId(), true, false) . ')';
         $commentIdColumn = $this->escapeString($widget->getCommentIdColumn()->getDataColumnName(), true, false);
         $commentCreatedColumn = $this->escapeString($widget->getCommentCreatedDateColumn()->getDataColumnName(), true, false);
         $commentContentColumn = $this->escapeString($widget->getCommentContentColumn()->getDataColumnName(), true, false);
@@ -47,7 +47,7 @@ trait JqueryCommentsTrait
                 && $column->getAttribute()->getRelationPath()->isEmpty()
                 && $column->getAttribute()->isSystem()) {
                 $columnName = $this->escapeString($column->getDataColumnName(), true, false);
-                $systemColsJs .= "{$columnName}: data.{$columnName},";
+                $systemColsJs .= "{$columnName}: data[{$columnName}],";
             }
         }
 
@@ -55,7 +55,8 @@ trait JqueryCommentsTrait
         $createButtonId = $this->escapeString($widget->getButtonCreate()->getId(), true, false);
         $editButtonId = $this->escapeString($widget->getButtonEdit()->getId(), true, false);
         $deleteButtonId = $this->escapeString($widget->getButtonDelete()->getId(), true, false);
-        $eventNamespace = preg_replace('/[^A-Za-z0-9_]/', '_', $elementId);
+        $eventNamespace = preg_replace('/[^A-Za-z0-9_]/', '_', $this->getId());
+        $eventName = $this->escapeString('actionperformed.comments_' . $eventNamespace, true, false);
 
         $currentUserId = $this->escapeString($this->getWorkbench()->getSecurity()->getAuthenticatedUser()->getUid(), true, false);
 
@@ -63,20 +64,20 @@ trait JqueryCommentsTrait
 
             $(function() {
                 var commentActionCallbacks = {};
-                commentActionCallbacks['{$createButtonId}'] = function() {
-                    $('#{$elementId}')[0].successCallback($('#{$elementId}').data('_exfInput'));
-                    $('#{$elementId}').data('comments').fetchDataAndRender();
+                commentActionCallbacks[{$createButtonId}] = function() {
+                    {$elementSelector}[0].successCallback({$elementSelector}.data('_exfInput'));
+                    {$elementSelector}.data('comments').fetchDataAndRender();
                 };
-                commentActionCallbacks['{$editButtonId}'] = function() {
-                    $('#{$elementId}')[0].successCallback($('#{$elementId}').data('_exfInput'));
-                    $('#{$elementId}').data('comments').fetchDataAndRender();
+                commentActionCallbacks[{$editButtonId}] = function() {
+                    {$elementSelector}[0].successCallback({$elementSelector}.data('_exfInput'));
+                    {$elementSelector}.data('comments').fetchDataAndRender();
                 };
-                commentActionCallbacks['{$deleteButtonId}'] = function() {
-                    $('#{$elementId}')[0].successCallback();
+                commentActionCallbacks[{$deleteButtonId}] = function() {
+                    {$elementSelector}[0].successCallback();
                 };
-                $(document).off('actionperformed.comments_{$eventNamespace}');
-                $(document).on('actionperformed.comments_{$eventNamespace}', function(event, params) {
-                    if (!params || params.page_alias !== '{$pageAlias}') {
+                $(document).off({$eventName});
+                $(document).on({$eventName}, function(event, params) {
+                    if (!params || params.page_alias !== {$pageAlias}) {
                         return;
                     }
                     var callback = commentActionCallbacks[params.trigger_widget_id];
@@ -84,9 +85,9 @@ trait JqueryCommentsTrait
                         callback();
                     }
                 });
-                $('#{$elementId}').comments({
+                {$elementSelector}.comments({
                     profilePictureURL: '',
-                    currentUserId: '{$currentUserId}',
+                    currentUserId: {$currentUserId},
                     roundProfilePictures: true,
                     textareaRows: 1,
                     enableAttachments: false,
@@ -97,14 +98,14 @@ trait JqueryCommentsTrait
                     enableEditing: true,
                     scrollContainer: $(window),
                     fieldMappings: {
-                        id: '{$commentIdColumn}',
-                        created: '{$commentCreatedColumn}',
+                        id: {$commentIdColumn},
+                        created: {$commentCreatedColumn},
                         modified: '_modified',
-                        content: '{$commentContentColumn}',
-                        creator: '{$commentAuthorIdColumn}',
-                        fullname: '{$commentAuthorColumn}',
-                        createdByCurrentUser: '{$createdByCurrentUserColumn}',
-                        dbModified: '{$commentEditedColumn}'
+                        content: {$commentContentColumn},
+                        creator: {$commentAuthorIdColumn},
+                        fullname: {$commentAuthorColumn},
+                        createdByCurrentUser: {$createdByCurrentUserColumn},
+                        dbModified: {$commentEditedColumn}
                     },
                     timeFormatter: function(time) {
                         return exfTools.date.format(time, {$dateFormatJs})
@@ -115,27 +116,27 @@ trait JqueryCommentsTrait
                     },
                     postComment: function(data, success, error) {
                         var oDataRow = {
-                            {$commentContentColumn}: data.{$commentContentColumn}
+                            {$commentContentColumn}: data[{$commentContentColumn}]
                         };
-                        $('#{$elementId}').data('_exfInput', oDataRow);
-                        $('#{$elementId}')[0].successCallback = success;
-                        $('#{$elementId}')[0].errorCallback = error;
+                        {$elementSelector}.data('_exfInput', oDataRow);
+                        {$elementSelector}[0].successCallback = success;
+                        {$elementSelector}[0].errorCallback = error;
                         {$createClickFunction}();
                     },
                     putComment: function(data, success, error) {
                         var oDataRow = {
                             {$systemColsJs}
-                            {$commentContentColumn}: data.{$commentContentColumn}
+                            {$commentContentColumn}: data[{$commentContentColumn}]
                         };
-                        $('#{$elementId}').data('_exfInput', oDataRow);
-                        $('#{$elementId}')[0].successCallback = success;
-                        $('#{$elementId}')[0].errorCallback = error;
+                        {$elementSelector}.data('_exfInput', oDataRow);
+                        {$elementSelector}[0].successCallback = success;
+                        {$elementSelector}[0].errorCallback = error;
                         {$editClickFunction}();
                     },
                     deleteComment: function(data, success, error) {
-                        $('#{$elementId}').data('_exfInput', data);
-                        $('#{$elementId}')[0].successCallback = success;
-                        $('#{$elementId}')[0].errorCallback = error;
+                        {$elementSelector}.data('_exfInput', data);
+                        {$elementSelector}[0].successCallback = success;
+                        {$elementSelector}[0].errorCallback = error;
                         {$deleteClickFunction}();
                     },
                     upvoteComment: function(data, success) {
@@ -167,7 +168,7 @@ JS;
 
         $pageAlias = $this->escapeString($widget->getPage()->getAliasWithNamespace(), true, false);
         $widgetId = $this->escapeString($widget->getId(), true, false);
-        $elementId = $this->escapeString($this->getId(), true, false);
+        $elementSelector = '$(' . $this->escapeString('#' . $this->getId(), true, false) . ')';
         $ajaxUrl = $this->escapeString($this->getAjaxUrl(), true, false);
         return <<<JS
                 enablePinging: true,
@@ -178,12 +179,12 @@ JS;
                         return;
                     }
                     $.ajax({
-                        url: "{$ajaxUrl}",
+                        url: {$ajaxUrl},
                         method: 'POST',
                         data: {
                             action: 'exface.Core.SearchCommentUsers',
-                            resource: '{$pageAlias}',
-                            element: '{$widgetId}',
+                            resource: {$pageAlias},
+                            element: {$widgetId},
                             term: searchTerm
                         },
                         success: function(json) {
@@ -194,7 +195,7 @@ JS;
                         },
                         error: function(jqXHR, textStatus, errorThrown) {
                             if (error) { error(jqXHR, textStatus, errorThrown); }
-                            $('#{$elementId}').trigger('exfCommentsUserSearchError', [jqXHR]);
+                            {$elementSelector}.trigger('exfCommentsUserSearchError', [jqXHR]);
                         }
                     });
                 },
