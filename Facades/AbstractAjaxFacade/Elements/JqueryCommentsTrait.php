@@ -73,7 +73,12 @@ trait JqueryCommentsTrait
                     {$elementSelector}.data('comments').fetchDataAndRender();
                 };
                 commentActionCallbacks[{$deleteButtonId}] = function() {
-                    {$elementSelector}[0].successCallback();
+                    var comments = {$elementSelector}.data('comments');
+                    var deletedComment = {$elementSelector}.data('_exfInput');
+                    // Action-effect listeners may have refreshed and removed the comment before this listener runs.
+                    if (comments.commentsById[deletedComment[{$commentIdColumn}]]) {
+                        {$elementSelector}[0].successCallback();
+                    }
                 };
                 $(document).off({$eventName});
                 $(document).on({$eventName}, function(event, params) {
